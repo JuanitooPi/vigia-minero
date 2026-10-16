@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vigía Minero · Detector de minería con IA</title>
+  <meta name="description" content="Clasifica imágenes satelitales y de dron de zonas mineras del Perú con modelos YOLO11 que corren en tu navegador.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilos.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 26 13 8l5 9 3-5 7 14z' fill='%23e3a446'/%3E%3C/svg%3E">
+</head>
+<body>
+  <header class="topbar">
+    <a class="marca" href="#">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 26 13 8l5 9 3-5 7 14z"/></svg>
+      Vigía Minero
+    </a>
+    <nav>
+      <a href="#analizar">Analizar</a>
+      <a href="#como">Cómo funciona</a>
+      <a href="#historial">Historial</a>
+      <a href="#modelos">Modelos</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">Inteligencia artificial · Perú</p>
+      <h1>Reconoce la minería<br><span>desde el aire</span></h1>
+      <p class="bajada">Sube una imagen satelital o de dron y dos modelos YOLO11 te dicen
+        en qué región está la mina y qué huella deja en el terreno.</p>
+      <ul class="chips">
+        <li><strong>2</strong> modelos</li>
+        <li><strong>97.8%</strong> precisión (región)</li>
+        <li><strong>97.2%</strong> precisión (huella)</li>
+        <li>Corre en tu navegador</li>
+        <li>Historial en <strong>MongoDB</strong></li>
+      </ul>
+    </section>
+
+    <section id="analizar" class="analizador">
+      <div class="modos" role="tablist" aria-label="Tipo de imagen">
+        <button role="tab" class="modo activo" data-modo="regiones" aria-selected="true">
+          <span class="ico">🛰️</span>
+          <span><b>Región minera</b><small>Imagen satelital</small></span>
+        </button>
+        <button role="tab" class="modo" data-modo="huella" aria-selected="false">
+          <span class="ico">🚁</span>
+          <span><b>Huella minera</b><small>Foto de dron</small></span>
+        </button>
+      </div>
+
+      <div class="panel">
+        <div class="col-entrada">
+          <label class="zona" id="zona" tabindex="0">
+            <input type="file" id="archivo" accept="image/*" hidden>
+            <img id="vista" alt="" hidden>
+            <div class="zona-vacia" id="zonaVacia">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+              <p><b>Arrastra una imagen</b> o haz clic para elegirla</p>
+              <small id="pista">Captura satelital de una zona minera (Google Earth, Sentinel-2)</small>
+            </div>
+          </label>
+          <div class="ejemplos">
+            <p>¿No tienes una imagen? Prueba un ejemplo:</p>
+            <div class="tira" id="tira"></div>
+          </div>
+        </div>
+
+        <div class="col-resultado">
+          <div class="resultado" id="resultado" aria-live="polite">
+            <div class="estado" id="estado">
+              <div class="radar"></div>
+              <p>Sube una imagen para empezar</p>
+            </div>
+            <div class="salida" id="salida" hidden>
+              <p class="etiqueta">Resultado</p>
+              <div class="top">
+                <span class="punto" id="topPunto"></span>
+                <h2 id="topNombre"></h2>
+                <span class="conf" id="topConf"></span>
+              </div>
+              <p class="desc" id="topDesc"></p>
+              <p class="aviso" id="aviso" hidden>⚠️ Confianza baja: la imagen no se parece mucho a las de entrenamiento.</p>
+              <ul class="barras" id="barras"></ul>
+              <p class="tiempo" id="tiempo"></p>
+              <p class="guardado" id="guardado"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="historial" class="historial">
+      <div class="hist-cab">
+        <h2 class="titulo">Historial de análisis</h2>
+        <button type="button" class="btn-sec" onclick="cargarHistorial()">↻ Actualizar</button>
+      </div>
+      <p class="hist-sub">Cada análisis se guarda en <b>MongoDB</b>: fecha y hora, modelo, resultado,
+        probabilidades y datos de la imagen (nombre, tamaño, huella SHA-256). La imagen no se guarda.</p>
+      <div class="hist-grid">
+        <div class="hist-resumen">
+          <p class="etiqueta">Total guardado</p>
+          <p class="hist-total" id="histTotal">—</p>
+          <ul class="hist-stats" id="histStats"></ul>
+        </div>
+        <div class="hist-tabla">
+          <table>
+            <thead><tr><th>Fecha y hora</th><th>Modelo</th><th>Resultado</th><th class="num">Confianza</th><th>Imagen</th></tr></thead>
+            <tbody id="histFilas"><tr><td colspan="5" class="tenue">Cargando…</td></tr></tbody>
+          </table>
+          <p class="hist-error" id="histError" hidden>No se pudo conectar con la base de datos.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="como" class="como">
+      <h2 class="titulo">Cómo funciona</h2>
+      <ol class="pasos">
+        <li><span>01</span><h3>Subes la imagen</h3><p>Se analiza en tu dispositivo: la imagen no se envía a ningún servidor.</p></li>
+        <li><span>02</span><h3>Se prepara</h3><p>Se redimensiona y recorta al centro, igual que en el entrenamiento (224 o 320 px).</p></li>
+        <li><span>03</span><h3>El modelo la clasifica</h3><p>Una red YOLO11 en formato ONNX calcula la probabilidad de cada clase en milisegundos.</p></li>
+        <li><span>04</span><h3>Se guarda el resultado</h3><p>El servidor registra en MongoDB la fecha, el resultado y los datos de la imagen (sin la imagen).</p></li>
+      </ol>
+    </section>
+
+    <section id="modelos" class="modelos">
+      <h2 class="titulo">Los modelos</h2>
+      <div class="tarjetas">
+        <article class="tarjeta">
+          <header><span class="ico">🛰️</span><div><h3>Región minera</h3><p>YOLO11n-cls · 224 px · satélite</p></div></header>
+          <ul class="clases">
+            <li><i style="--c:var(--selva-baja)"></i><b>Selva baja</b> Llanura amazónica (Madre de Dios): pozas y arena que reemplazan al bosque.</li>
+            <li><i style="--c:var(--selva-alta)"></i><b>Selva alta</b> Ceja de selva (Puno, Cusco): minería en quebradas y ríos entre montañas.</li>
+            <li><i style="--c:var(--sierra)"></i><b>Sierra</b> Andes (Ancash, Ayacucho, Arequipa): tajos, relaves y caminos en terreno árido.</li>
+          </ul>
+          <figure>
+            <img src="img/mapa_puntos.png" alt="Mapa de los 45 puntos mineros usados para entrenar" loading="lazy">
+            <figcaption>45 puntos de entrenamiento · Amazon Mining Watch y Tang &amp; Werner (2023)</figcaption>
+          </figure>
+        </article>
+        <article class="tarjeta">
+          <header><span class="ico">🚁</span><div><h3>Huella minera</h3><p>YOLO11n-cls · 320 px · dron</p></div></header>
+          <ul class="clases">
+            <li><i style="--c:var(--cascajo)"></i><b>Montículos de cascajo</b> Pilas de grava lavada que quedan tras extraer el oro.</li>
+            <li><i style="--c:var(--pozas)"></i><b>Pozas mineras</b> Pozas de agua turbia excavadas para lavar el material.</li>
+            <li><i style="--c:var(--suelo)"></i><b>Suelo removido</b> Terreno deforestado y removido por maquinaria.</li>
+          </ul>
+          <p class="nota">Entrenado con ortomosaicos de dron del dataset ELDOR (minería aurífera en la Amazonía).</p>
+        </article>
+      </div>
+      <p class="limite"><b>Limitación:</b> ningún modelo tiene una clase “sin minería”. Cualquier imagen se asigna a una de sus tres clases, así que úsalos solo con imágenes de zonas mineras.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Vigía Minero · Proyecto académico · Modelos YOLO11 ejecutados con ONNX Runtime Web</p>
+  </footer>
+
+  <script src="vendor/ort.wasm.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

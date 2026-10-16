@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: vigia-minero
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn servidor:app --bind 0.0.0.0:$PORT --workers 2
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: MONGODB_URI
+        sync: false        # se escribe a mano en el panel de Render (secreto)
+      - key: MONGODB_DB
+        value: mineria
+      - key: MONGODB_COLLECTION
+        value: mineria_data
