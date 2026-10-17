@@ -1,6 +1,6 @@
-# Vigía Minero + MongoDB
+# Vigía Minero (modelo unificado) + MongoDB
 
-- La IA corre en el navegador (igual que antes).
+- Un solo modelo YOLO11 (5 clases región × huella) corre en el navegador.
 - `servidor.py` (Flask) sirve la página y guarda cada análisis en MongoDB.
 - La imagen **no** se guarda; solo sus datos.
 
@@ -9,10 +9,11 @@
 | Campo | Ejemplo |
 |---|---|
 | `fecha` | 2026-10-16T22:26:33Z (UTC; la web la muestra en hora de Perú) |
-| `modo` | `regiones` o `huella` |
-| `modelo` | arquitectura YOLO11n-cls, archivo, tamaño de entrada |
-| `resultado` | clase, nombre, confianza, `confianza_baja` (< 60 %) |
-| `probabilidades` | las 3 clases con su probabilidad |
+| `modo` | `unificado` |
+| `modelo` | modelo_unificado, YOLO11n-cls, unificado.onnx, 224 px |
+| `resultado` | clase (p. ej. `sierra__monticulos_cascajo`), confianza, `confianza_baja`, `region` + `region_confianza`, `huella` + `huella_confianza` |
+| `probabilidades` | las 5 clases con su probabilidad |
+| `prob_region` / `prob_huella` | probabilidad total por región y por huella |
 | `tiempo_inferencia_ms` | 49 |
 | `imagen` | nombre, tipo, tamaño en bytes, ancho, alto, origen (subida / arrastre / pegada / ejemplo), huella SHA-256 |
 | `cliente` | id de sesión, zona horaria, idioma, navegador |
@@ -54,6 +55,6 @@ Nota: el plan gratis de Web Service se apaga tras 15 min sin visitas; la primera
 
 ## API
 - `POST /api/analisis` → guarda un análisis (valida modo, clases y números)
-- `GET /api/analisis?limite=20&modo=regiones` → historial
-- `GET /api/estadisticas` → total y conteo por clase
+- `GET /api/analisis?limite=20` → historial (modelo unificado)
+- `GET /api/estadisticas` → total y conteo por región y por huella
 - `GET /api/salud` → comprueba la conexión con MongoDB

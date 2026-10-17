@@ -228,3 +228,24 @@ tbody tr:hover { background: rgb(255 255 255 / .02); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* --- modelo unificado: desglose región / huella --- */
+.analizador > .panel:first-child { margin-top: 0; }
+.bajada b { color: var(--texto); font-weight: 600; }
+.top h2 .sep { color: var(--texto-2); font-weight: 500; }
+.top h2 .hue { color: var(--texto-2); font-weight: 600; }
+.desglose { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
+.mini { background: var(--fondo-2); border: 1px solid var(--borde); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.mini .barras { margin-top: 12px; gap: 12px; }
+.mini .fila { font-size: .85rem; }
+.detalle { margin-top: 14px; border-top: 1px solid var(--borde); padding-top: 12px; }
+.detalle summary { cursor: pointer; font-size: .85rem; color: var(--texto-2); list-style: none; display: flex; align-items: center; gap: 8px; }
+.detalle summary::-webkit-details-marker { display: none; }
+.detalle summary::before { content: "▸"; transition: transform .2s; }
+.detalle[open] summary::before { transform: rotate(90deg); }
+.detalle summary:hover { color: var(--texto); }
+.detalle .barras { margin-top: 14px; }
+.hist-sub-et { margin: 16px 0 8px; }
+.sub-et { margin: 4px 0 10px; }
+.tarjeta .clases + .sub-et { margin-top: 20px; }
+@media (max-width: 560px) { .desglose { grid-template-columns: 1fr; } }

@@ -1,12 +1,12 @@
 """Servidor de Vigía Minero.
 
-- Sirve la página web (carpeta public/). Los modelos corren en el navegador.
+- Sirve la página web (carpeta public/). El modelo unificado corre en el navegador.
 - Guarda cada análisis en MongoDB (sin la imagen) y devuelve historial y estadísticas.
 
 La cadena de conexión NUNCA va en el código: se lee de la variable de entorno MONGODB_URI
 (archivo .env en tu PC, o "Environment" en Render).
 
-Uso local:  py servidor.py   -> http://localhost:8000
+Uso local:  py servidor.py   -> http://localhost:8000  (modelo unificado: región × huella)
 """
 import os
 import re
@@ -21,11 +21,18 @@ load_dotenv()
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PUBLICO = os.path.join(AQUI, "public")
 
-# Clases válidas de cada modelo (el servidor no acepta otras)
+# Clases del modelo unificado: "<region>__<huella>" (el servidor no acepta otras)
 CLASES = {
-    "regiones": ["mineria_selva_alta", "mineria_selva_baja", "mineria_sierra"],
-    "huella": ["monticulos_cascajo", "pozas_mineras", "suelo_removido"],
+    "unificado": [
+        "selva_alta__suelo_deforestado",
+        "selva_baja__monticulos_cascajo",
+        "selva_baja__suelo_deforestado",
+        "sierra__monticulos_cascajo",
+        "sierra__suelo_deforestado",
+    ],
 }
+REGIONES = {"selva_baja": "Selva baja", "selva_alta": "Selva alta", "sierra": "Sierra"}
+HUELLAS = {"monticulos_cascajo": "Montículos de cascajo", "suelo_deforestado": "Suelo deforestado"}
 ORIGENES = {"subida", "arrastre", "pegada", "ejemplo"}
 
 app = Flask(__name__, static_folder=None)
@@ -46,6 +53,7 @@ def coleccion():
         _coleccion = db[os.environ.get("MONGODB_COLLECTION", "mineria_data")]
         _coleccion.create_index([("fecha", DESCENDING)])
         _coleccion.create_index("modo")
+        _coleccion.create_index("resultado.region")
     return _coleccion
 
 
@@ -84,17 +92,34 @@ def limpiar(datos):
         probabilidades.append({"clase": clase, "nombre": texto(p.get("nombre"), 60), "prob": round(valor, 6)})
     probabilidades.sort(key=lambda p: p["prob"], reverse=True)
     top = probabilidades[0]
+    region, huella = top["clase"].split("__")
+
+    # probabilidad total de cada región y de cada huella (sumando las clases combinadas)
+    prob_region = {r: 0.0 for r in REGIONES}
+    prob_huella = {h: 0.0 for h in HUELLAS}
+    for p in probabilidades:
+        r, h = p["clase"].split("__")
+        prob_region[r] += p["prob"]
+        prob_huella[h] += p["prob"]
 
     img = datos.get("imagen") or {}
     sha = img.get("sha256")
     doc = {
         "fecha": datetime.now(timezone.utc),
         "modo": modo,
-        "modelo": {"arquitectura": "YOLO11n-cls", "formato": "onnx",
-                   "archivo": f"{modo}.onnx", "tam_entrada": 224 if modo == "regiones" else 320},
-        "resultado": {"clase": top["clase"], "nombre": top["nombre"], "confianza": top["prob"],
-                      "confianza_baja": top["prob"] < 0.6},
+        "modelo": {"nombre": "modelo_unificado", "arquitectura": "YOLO11n-cls", "formato": "onnx",
+                   "archivo": "unificado.onnx", "tam_entrada": 224, "clases": len(CLASES[modo])},
+        "resultado": {
+            "clase": top["clase"], "nombre": f"{REGIONES[region]} · {HUELLAS[huella]}",
+            "confianza": top["prob"], "confianza_baja": top["prob"] < 0.6,
+            "region": region, "region_nombre": REGIONES[region],
+            "region_confianza": round(prob_region[region], 6),
+            "huella": huella, "huella_nombre": HUELLAS[huella],
+            "huella_confianza": round(prob_huella[huella], 6),
+        },
         "probabilidades": probabilidades,
+        "prob_region": {k: round(v, 6) for k, v in prob_region.items()},
+        "prob_huella": {k: round(v, 6) for k, v in prob_huella.items()},
         "tiempo_inferencia_ms": entero(datos.get("tiempo_ms"), 0, 600000),
         "imagen": {  # solo metadatos, nunca la imagen
             "nombre_archivo": texto(img.get("nombre"), 200),
@@ -141,7 +166,7 @@ def guardar():
 @app.get("/api/analisis")
 def historial():
     limite = int(numero(request.args.get("limite"), 1, 100, 20))
-    filtro = {"modo": request.args["modo"]} if request.args.get("modo") in CLASES else {}
+    filtro = {"modo": request.args.get("modo", "unificado")}
     try:
         docs = coleccion().find(filtro, {"cliente.navegador": 0}).sort("fecha", DESCENDING).limit(limite)
         return jsonify([a_json(d) for d in docs])
@@ -154,17 +179,20 @@ def historial():
 def estadisticas():
     try:
         col = coleccion()
-        por_clase = list(col.aggregate([
-            {"$group": {"_id": {"modo": "$modo", "clase": "$resultado.clase", "nombre": "$resultado.nombre"},
-                        "total": {"$sum": 1}, "confianza_media": {"$avg": "$resultado.confianza"}}},
-            {"$sort": {"total": -1}},
-        ]))
-        return jsonify(
-            total=col.count_documents({}),
-            por_clase=[{"modo": g["_id"]["modo"], "clase": g["_id"]["clase"], "nombre": g["_id"]["nombre"],
-                        "total": g["total"], "confianza_media": round(g["confianza_media"], 4)}
-                       for g in por_clase],
-        )
+        filtro = {"modo": "unificado"}
+
+        def contar(campo, nombres):
+            grupos = {g["_id"]: g for g in col.aggregate([
+                {"$match": filtro},
+                {"$group": {"_id": f"$resultado.{campo}", "total": {"$sum": 1},
+                            "confianza_media": {"$avg": "$resultado.confianza"}}}])}
+            return [{"clave": k, "nombre": n, "total": grupos.get(k, {}).get("total", 0),
+                     "confianza_media": round(grupos[k]["confianza_media"], 4) if k in grupos else None}
+                    for k, n in nombres.items()]
+
+        return jsonify(total=col.count_documents(filtro),
+                       por_region=contar("region", REGIONES),
+                       por_huella=contar("huella", HUELLAS))
     except Exception as e:
         app.logger.error("No se pudo calcular: %s", e)
         return jsonify(error="base de datos no disponible"), 503
