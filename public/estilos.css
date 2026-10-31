@@ -252,3 +252,11 @@ tbody tr:hover { background: rgb(255 255 255 / .02); }
 
 .titulo .ver { font-size: .5em; vertical-align: middle; padding: 3px 10px; border-radius: 99px;
   border: 1px solid rgb(227 164 70 / .45); color: var(--acento); margin-left: 8px; letter-spacing: 0; }
+
+/* --- correcciones: ocultar vista previa vacia y barra de ejemplos oscura --- */
+[hidden] { display: none !important; }
+.tira { scrollbar-width: thin; scrollbar-color: #3a4743 transparent; }
+.tira::-webkit-scrollbar { height: 6px; }
+.tira::-webkit-scrollbar-track { background: transparent; }
+.tira::-webkit-scrollbar-thumb { background: #3a4743; border-radius: 99px; }
+.tira::-webkit-scrollbar-thumb:hover { background: var(--acento); }
