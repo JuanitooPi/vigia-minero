@@ -24,15 +24,20 @@ PUBLICO = os.path.join(AQUI, "public")
 # Clases del modelo unificado: "<region>__<huella>" (el servidor no acepta otras)
 CLASES = {
     "unificado": [
+        "selva_alta__monticulos_cascajo",
+        "selva_alta__pozas_mineras",
         "selva_alta__suelo_deforestado",
         "selva_baja__monticulos_cascajo",
+        "selva_baja__pozas_mineras",
         "selva_baja__suelo_deforestado",
         "sierra__monticulos_cascajo",
+        "sierra__pozas_mineras",
         "sierra__suelo_deforestado",
     ],
 }
 REGIONES = {"selva_baja": "Selva baja", "selva_alta": "Selva alta", "sierra": "Sierra"}
-HUELLAS = {"monticulos_cascajo": "Montículos de cascajo", "suelo_deforestado": "Suelo deforestado"}
+HUELLAS = {"pozas_mineras": "Pozas mineras", "monticulos_cascajo": "Montículos de cascajo",
+           "suelo_deforestado": "Suelo deforestado"}
 ORIGENES = {"subida", "arrastre", "pegada", "ejemplo"}
 
 app = Flask(__name__, static_folder=None)
@@ -107,8 +112,9 @@ def limpiar(datos):
     doc = {
         "fecha": datetime.now(timezone.utc),
         "modo": modo,
-        "modelo": {"nombre": "modelo_unificado", "arquitectura": "YOLO11n-cls", "formato": "onnx",
-                   "archivo": "unificado.onnx", "tam_entrada": 224, "clases": len(CLASES[modo])},
+        "modelo": {"nombre": "modelo_unificado_v2", "version": "v2", "arquitectura": "YOLO11n-cls",
+                   "formato": "onnx", "archivo": "unificado_v2.onnx", "tam_entrada": 224,
+                   "clases": len(CLASES[modo])},
         "resultado": {
             "clase": top["clase"], "nombre": f"{REGIONES[region]} · {HUELLAS[huella]}",
             "confianza": top["prob"], "confianza_baja": top["prob"] < 0.6,

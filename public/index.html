@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="estilos.css">
+  <link rel="stylesheet" href="estilos.css?v=2">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M4 26 13 8l5 9 3-5 7 14z' fill='%23e3a446'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -32,9 +32,9 @@
       <p class="bajada">Sube una imagen satelital de una zona minera y un solo modelo YOLO11 te dice
         <b>en qué región</b> está y <b>qué huella</b> deja en el terreno.</p>
       <ul class="chips">
-        <li><strong>1</strong> modelo unificado</li>
-        <li><strong>5</strong> clases región × huella</li>
-        <li><strong>96.1%</strong> precisión en validación</li>
+        <li><strong>9</strong> clases región × huella</li>
+        <li><strong>97.7%</strong> acierto en región</li>
+        <li><strong>77.1%</strong> acierto exacto (región + huella)</li>
         <li>Corre en tu navegador</li>
         <li>Historial en <strong>MongoDB</strong></li>
       </ul>
@@ -86,7 +86,7 @@
               </div>
 
               <details class="detalle">
-                <summary>Ver las 5 clases del modelo</summary>
+                <summary>Ver las 9 clases del modelo</summary>
                 <ul class="barras" id="barras"></ul>
               </details>
 
@@ -129,13 +129,13 @@
       <ol class="pasos">
         <li><span>01</span><h3>Subes la imagen</h3><p>Se analiza en tu dispositivo: la imagen no se envía a ningún servidor.</p></li>
         <li><span>02</span><h3>Se prepara</h3><p>Se redimensiona y recorta al centro a 224 × 224 px, igual que en el entrenamiento.</p></li>
-        <li><span>03</span><h3>Un solo modelo decide</h3><p>YOLO11 (ONNX) calcula la probabilidad de las 5 combinaciones región × huella.</p></li>
+        <li><span>03</span><h3>Un solo modelo decide</h3><p>YOLO11 (ONNX) calcula la probabilidad de las 9 combinaciones región × huella.</p></li>
         <li><span>04</span><h3>Se guarda el resultado</h3><p>El servidor registra en MongoDB la fecha, la región, la huella y los datos de la imagen.</p></li>
       </ol>
     </section>
 
     <section id="modelo" class="modelos">
-      <h2 class="titulo">El modelo unificado</h2>
+      <h2 class="titulo">El modelo unificado <span class="ver">v2</span></h2>
       <div class="tarjetas">
         <article class="tarjeta">
           <header><span class="ico">🛰️</span><div><h3>Región × Huella</h3><p>YOLO11n-cls · 224 px · imágenes satelitales</p></div></header>
@@ -147,23 +147,25 @@
           </ul>
           <p class="etiqueta sub-et">Huellas</p>
           <ul class="clases">
+            <li><i style="--c:var(--pozas)"></i><b>Pozas mineras</b> Pozas de agua excavadas para lavar el material o almacenar relaves.</li>
             <li><i style="--c:var(--cascajo)"></i><b>Montículos de cascajo</b> Pilas de grava y material removido que quedan tras extraer el mineral.</li>
             <li><i style="--c:var(--suelo)"></i><b>Suelo deforestado</b> Terreno sin vegetación, abierto por la actividad minera.</li>
           </ul>
-          <p class="nota">Clases entrenadas: selva alta · suelo deforestado, selva baja · cascajo, selva baja · suelo deforestado,
-            sierra · cascajo y sierra · suelo deforestado (1 608 recortes de 45 puntos).</p>
+          <p class="nota">Las 3 regiones × 3 huellas dan 9 clases, entrenadas con 2 283 recortes satelitales
+            de 60 zonas mineras. En validación acierta la región el 97.7 % de las veces y la clase exacta el 77.1 %.</p>
         </article>
         <article class="tarjeta">
           <header><span class="ico">🗺️</span><div><h3>Puntos de entrenamiento</h3><p>Amazon Mining Watch · Tang &amp; Werner (2023)</p></div></header>
           <figure>
-            <img src="img/mapa_puntos.png" alt="Mapa de los 45 puntos mineros usados para entrenar" loading="lazy">
-            <figcaption>45 zonas mineras del Perú, 15 por región</figcaption>
+            <img src="img/mapa_puntos.png" alt="Mapa de los 60 puntos mineros usados para entrenar" loading="lazy">
+            <figcaption>60 zonas mineras del Perú, 20 por región</figcaption>
           </figure>
         </article>
       </div>
-      <p class="limite"><b>Limitaciones:</b> el modelo no tiene una clase “sin minería” ni ejemplos de pozas mineras,
-        así que cualquier imagen se asigna a una de sus 5 clases. La combinación selva baja · suelo deforestado tuvo pocos
-        ejemplos (36) y es la menos fiable.</p>
+      <p class="limite"><b>Limitaciones:</b> el modelo no tiene una clase “sin minería”, así que cualquier imagen se asigna
+        a una de sus 9 clases. La región es muy fiable (97.7 %); la huella cuesta más (78 %). Lo más difícil son las
+        <b>pozas mineras en la sierra</b> (suele confundirlas con suelo deforestado) y el <b>suelo deforestado en selva</b>,
+        que tuvo pocos ejemplos de entrenamiento.</p>
     </section>
   </main>
 
@@ -172,6 +174,6 @@
   </footer>
 
   <script src="vendor/ort.wasm.min.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>

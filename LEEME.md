@@ -1,6 +1,6 @@
-# Vigía Minero (modelo unificado) + MongoDB
+# Vigía Minero (modelo unificado v2) + MongoDB
 
-- Un solo modelo YOLO11 (5 clases región × huella) corre en el navegador.
+- Un solo modelo YOLO11 v2 (9 clases: 3 regiones × 3 huellas) corre en el navegador.
 - `servidor.py` (Flask) sirve la página y guarda cada análisis en MongoDB.
 - La imagen **no** se guarda; solo sus datos.
 
@@ -10,9 +10,9 @@
 |---|---|
 | `fecha` | 2026-10-16T22:26:33Z (UTC; la web la muestra en hora de Perú) |
 | `modo` | `unificado` |
-| `modelo` | modelo_unificado, YOLO11n-cls, unificado.onnx, 224 px |
+| `modelo` | modelo_unificado_v2, versión `v2`, YOLO11n-cls, unificado_v2.onnx, 224 px, 9 clases |
 | `resultado` | clase (p. ej. `sierra__monticulos_cascajo`), confianza, `confianza_baja`, `region` + `region_confianza`, `huella` + `huella_confianza` |
-| `probabilidades` | las 5 clases con su probabilidad |
+| `probabilidades` | las 9 clases con su probabilidad |
 | `prob_region` / `prob_huella` | probabilidad total por región y por huella |
 | `tiempo_inferencia_ms` | 49 |
 | `imagen` | nombre, tipo, tamaño en bytes, ancho, alto, origen (subida / arrastre / pegada / ejemplo), huella SHA-256 |

@@ -249,3 +249,6 @@ tbody tr:hover { background: rgb(255 255 255 / .02); }
 .sub-et { margin: 4px 0 10px; }
 .tarjeta .clases + .sub-et { margin-top: 20px; }
 @media (max-width: 560px) { .desglose { grid-template-columns: 1fr; } }
+
+.titulo .ver { font-size: .5em; vertical-align: middle; padding: 3px 10px; border-radius: 99px;
+  border: 1px solid rgb(227 164 70 / .45); color: var(--acento); margin-left: 8px; letter-spacing: 0; }

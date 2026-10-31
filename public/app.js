@@ -3,7 +3,8 @@ ort.env.wasm.wasmPaths = new URL("vendor/", location.href).href;
 ort.env.wasm.numThreads = 1;
 
 const TAM = 224;
-const ARCHIVO_MODELO = "modelos/unificado.onnx";
+const ARCHIVO_MODELO = "modelos/unificado_v2.onnx";
+const VERSION_MODELO = "v2";
 
 const REGIONES = {
   selva_baja: { nombre: "Selva baja", color: "--selva-baja",
@@ -14,6 +15,8 @@ const REGIONES = {
     desc: "Andes (Ancash, Ayacucho, Arequipa): tajos, relaves, caminos y campamentos en terreno árido." },
 };
 const HUELLAS = {
+  pozas_mineras: { nombre: "Pozas mineras", color: "--pozas",
+    desc: "pozas de agua excavadas para lavar el material o almacenar relaves" },
   monticulos_cascajo: { nombre: "Montículos de cascajo", color: "--cascajo",
     desc: "pilas de grava y material removido tras extraer el mineral" },
   suelo_deforestado: { nombre: "Suelo deforestado", color: "--suelo",
@@ -21,10 +24,14 @@ const HUELLAS = {
 };
 // Mismo orden que el modelo (clases.json)
 const CLASES = [
+  "selva_alta__monticulos_cascajo",
+  "selva_alta__pozas_mineras",
   "selva_alta__suelo_deforestado",
   "selva_baja__monticulos_cascajo",
+  "selva_baja__pozas_mineras",
   "selva_baja__suelo_deforestado",
   "sierra__monticulos_cascajo",
+  "sierra__pozas_mineras",
   "sierra__suelo_deforestado",
 ].map(id => {
   const [region, huella] = id.split("__");
@@ -88,7 +95,7 @@ async function analizar() {
   }
 }
 
-// Suma las probabilidades de las 5 clases por región y por huella
+// Suma las probabilidades de las 9 clases por región y por huella
 function agrupar(probs, campo, catalogo) {
   const t = Object.fromEntries(Object.keys(catalogo).map(k => [k, 0]));
   CLASES.forEach((c, i) => t[c[campo]] += probs[i]);
@@ -113,7 +120,7 @@ function mostrar(probs, ms) {
   $("topConf").textContent = pct(probs[i]);
   $("topDesc").textContent = `${reg.desc} Huella: ${hue.desc}.`;
   $("aviso").hidden = probs[i] >= 0.6;
-  $("tiempo").textContent = `Inferencia en ${ms.toFixed(0)} ms · YOLO11n-cls (224 px) · 5 clases`;
+  $("tiempo").textContent = `Inferencia en ${ms.toFixed(0)} ms · YOLO11n-cls (224 px) · 9 clases · modelo v2`;
 
   $("barrasRegion").innerHTML = agrupar(probs, "region", REGIONES)
     .map(([k, p]) => filaBarra(REGIONES[k].nombre, p, REGIONES[k].color)).join("");
@@ -130,7 +137,7 @@ async function guardar(probs, ms) {
   const marca = $("guardado");
   marca.className = "guardado"; marca.textContent = "Guardando en MongoDB…";
   const cuerpo = {
-    modo: "unificado", sesion: SESION, tiempo_ms: Math.round(ms),
+    modo: "unificado", version_modelo: VERSION_MODELO, sesion: SESION, tiempo_ms: Math.round(ms),
     zona_horaria: Intl.DateTimeFormat().resolvedOptions().timeZone, idioma: navigator.language,
     probabilidades: probs.map((p, i) => ({ clase: CLASES[i].id, nombre: CLASES[i].nombre, prob: p })),
     imagen: metaActual,
